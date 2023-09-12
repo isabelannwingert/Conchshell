@@ -7,3 +7,4 @@
 This Python package contains CONCHSHELL, a brain connectome quality control pipeline in line with DiCIPHR's DTI Processing pipeline.
 
 Please stay tuned for upcoming changes!
+🐚

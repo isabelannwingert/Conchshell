@@ -1,4 +1,5 @@
 """
+#! /usr/bin/env python
 Created on Weds Sep 13 12:03:22 2023
 @author: Isabel Ann Wingert, DiCIPHR Lab 
 CONTACT: isabel.wingert@pennmedicine.upenn.edu
@@ -10,7 +11,7 @@ import pandas as pd
 
 # =============================================================================
 # DESCRIPTION = '''
-#    Creates Connectivity Matrices and calculates mean density and mean strength.
+#    Compiles streamlength statistics.
 #'''
 # PROTOCOL_NAME='Conchshell'
 #

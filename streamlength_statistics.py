@@ -93,6 +93,5 @@ def ratioCN(n_seeds, count):
     ratioCN = count / n_seeds
     return(ratioCN)
 
-
-# Next steps: What else do we need to do to organize after we gather all three of the metrics above?
+# Next steps: What else do we need to do to organize after we gather all of the metrics above?
 

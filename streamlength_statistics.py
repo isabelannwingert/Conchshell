@@ -26,9 +26,9 @@ import pandas as pd
 #                    help='A text file containing subject IDs'
 #                    )
 #     p.add_argument('-f', '--filename', action='store', 
-#                    metavar='<png>', dest='finelame_template',
+#                    metavar='<str>', dest='filelame_template',
 #                    type=str, required=True,
-#                    help="A template for the output connectivity matrix, with {s}" 
+#                    help="A template for the output statistics / Z-Scores, with {s}" 
 #                    "to be replaced by the subject ID"
 #                    )
 #     p.add_argument('-o', '--outdir', action='store',

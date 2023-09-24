@@ -61,13 +61,12 @@ def main(argv):
 
     measures = {'Subject':[], 'file': [],
                 'density':[], 'num_connected_components':[], 'avg_network_strength':[],
-                'avg_interhemispheric_strength':[], 'avg_intrahemispheric_strength':[]}
-    """
+                'avg_interhemispheric_strength':[], 'avg_intrahemispheric_strength':[],
                 'count':[], 'nseeds':[], 'ratioCN':[],
                 'mean_streamlength':[], 'median_streamlength':[], 'stdev_streamlength':[],
                 'min_streamlength':[], 'max_streamlength':[]
                 }
-    """
+
     FIG_ROW = 4
     FIG_COL = 5
     fig1 = plt.figure(figsize=(25, 20))
@@ -81,7 +80,7 @@ def main(argv):
         measures['avg_network_strength'].append(slstats.average_network_strength(connmat))
         measures['avg_interhemispheric_strength'].append(slstats.average_interhemispheric_strength(connmat))
         measures['avg_intrahemispheric_strength'].append(slstats.average_intrahemispheric_strength(connmat))
-        """
+
         tckstats_df = slstats.tckstats_statistics(tckpaths[i])
         measures['count'].append(slstats.count(tckstats_df))
         measures['nseeds'].append(slstats.nseeds(tckpaths[i]))
@@ -91,7 +90,7 @@ def main(argv):
         measures['stdev_streamlength'].append(slstats.stdev_streamlength(tckstats_df))
         measures['min_streamlength'].append(slstats.min_streamlength(tckstats_df))
         measures['max_streamlength'].append(slstats.max_streamlength(tckstats_df))
-        """
+
         # Plot heatmaps and histograms to pdf file
         findex = i%(FIG_COL*FIG_ROW)
         if  (i > 0) and (findex == 0):
@@ -113,13 +112,16 @@ def main(argv):
     measures_df = pd.DataFrame(measures)
     measures_df.to_csv(os.path.join(args.outputdir, 'QC_measures.csv'))
     
-    #TO DO: adjust for covariates
+    
+    #TO DO: adjust for covariates and compute z-scores
     covars = None
     if args.covarscsv is not None:
         covars = pd.read_csv(args.covarscsv, index_col=0, na_values=[' ','na','nan','NaN','NAN','NA','#N/A','.','NULL'])
     columns = None
     if args.columnstxt is not None:
         columns = [r.strip() for r in open(args.columnstxt,'r').readlines()]
+    
+    #TO DO: plot subject-wise variance and detect outliers
 
 if __name__ == '__main__':
     main(sys.argv[1:])

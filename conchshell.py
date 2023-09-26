@@ -71,7 +71,12 @@ def main(argv):
     FIG_COL = 5
     fig1 = plt.figure(figsize=(25, 20))
     fig2 = plt.figure(figsize=(25, 20))
+    max_edges = [slstats.read_connmat(connpaths[i]).max() for i in range(len(subjlist))] 
+    max_edges = np.asarray(max_edges)
+    vmax = np.log(np.percentile(max_edges, 99))
+    
     for i, subject in enumerate(subjlist):
+        print('Checking connectome', i+1, 'out of', len(subjlist))
         connmat = slstats.read_connmat(connpaths[i])
         measures['Subject'].append(subject)
         measures['file'].append(connpaths[i])
@@ -84,7 +89,7 @@ def main(argv):
         tckstats_df = slstats.tckstats_statistics(tckpaths[i])
         measures['count'].append(slstats.count(tckstats_df))
         measures['nseeds'].append(slstats.nseeds(tckpaths[i]))
-        measures['ratioCN'].append(slstats.ratioCN(measures['count'][-1] / measures['nseeds'][-1]))
+        measures['ratioCN'].append(measures['count'][-1] / measures['nseeds'][-1])
         measures['mean_streamlength'].append(slstats.mean_streamlength(tckstats_df))
         measures['median_streamlength'].append(slstats.median_streamlength(tckstats_df))
         measures['stdev_streamlength'].append(slstats.stdev_streamlength(tckstats_df))
@@ -99,11 +104,13 @@ def main(argv):
             fig1.clf()
             fig2.clf()
         ax = fig1.add_subplot(FIG_ROW, FIG_COL, findex+1)
-        plot_heatmap(connmat, ax=ax, title=subject)
+        plot_heatmap(np.log(connmat+1), ax=ax, title=subject, vmax=vmax)
         ax = fig2.add_subplot(FIG_ROW, FIG_COL, findex+1)
-        plot_hist(connmat, ax=ax, title=subject)
+        plot_hist(connmat, ax=ax, title=subject, bins=50, log=True)
 
+    fig1.tight_layout()
     pp_heatmap.savefig(fig1)
+    fig2.tight_layout()
     pp_histogram.savefig(fig2)
     pp_heatmap.close()
     pp_histogram.close()
@@ -112,8 +119,9 @@ def main(argv):
     measures_df = pd.DataFrame(measures)
     measures_df.to_csv(os.path.join(args.outputdir, 'QC_measures.csv'))
     
-    
     #TO DO: adjust for covariates and compute z-scores
+    # z-score columns: density, avg_network_strength, avg_interhemispheric_strength, avg_intrahemispheric_strength, 
+    #                  ratioCN, mean_streamlength, stdev_streamlength, max_streamlength
     covars = None
     if args.covarscsv is not None:
         covars = pd.read_csv(args.covarscsv, index_col=0, na_values=[' ','na','nan','NaN','NAN','NA','#N/A','.','NULL'])

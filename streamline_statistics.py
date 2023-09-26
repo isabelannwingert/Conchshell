@@ -76,13 +76,13 @@ def average_intrahemispheric_strength(connmat):
     return np.mean(np.concatenate((submatLut, submatRut)))
 
 def nseeds(subjectConnectomePath, nseeds_file="nseeds.txt"):
-    nseeds_path = os.path.join([subjectConnectomePath, nseeds_file])
+    nseeds_path = os.path.join(subjectConnectomePath, nseeds_file)
     with open(nseeds_path, "r") as file:
         n_seeds = int(file.read().replace('\n', ''))
     return(n_seeds)
 
 def tckstats_statistics(subjectConnectomePath, tckstats_file="tckstats.txt"):
-    tckstats_path = os.path.join([subjectConnectomePath, tckstats_file])
+    tckstats_path = os.path.join(subjectConnectomePath, tckstats_file)
     tckstats_df = pd.read_csv(tckstats_path,
                               skiprows=2, nrows=1, header=None,
                               names=["mean", "median", "stdev", "min", "max", "count"], 

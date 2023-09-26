@@ -29,6 +29,7 @@ def plot_hist(connmat, ax=None, title=None, **kwargs):
     if ax is None:
         ax = plt.gca()
     im = ax.hist(connmat[np.triu_indices(connmat.shape[0],1)], **kwargs)
+    ax.set_xticklabels(ax.get_xticks(), rotation=30)
     if title is not None:
         ax.set_title(title)
     return im

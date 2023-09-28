@@ -1,4 +1,4 @@
-# Conchshell
+# CONCHSHELL
 
 **CON**ne**C**tome **H**eatmaps **S**tatistics and **H**istogram **E**xamination for DTI qua**L**ity contro**L** 
 

@@ -4,7 +4,7 @@
 
 **Developers**: Isabel Ann Wingert, Drew Parker, & Sherry Shen
 
-This Python package contains CONCHSHELL, a brain connectome quality control pipeline in line with DiCIPHR's DTI Processing pipeline.
+This Python package contains CONCHSHELL, a brain connectome quality control pipeline currently in line with DiCIPHR's DTI Processing pipeline.
 
-Please stay tuned for upcoming changes!
+Please stay tuned for upcoming changes including adaptation to a more universal connectome quality control pipeline.
 🐚

@@ -63,6 +63,8 @@ def main(argv):
     # Import connectome data
     subjlist = np.loadtxt(args.subjecttxt, dtype='str', delimiter = '\n')
     atlaslist, connpaths, *params = np.genfromtxt(args.pathtxt, dtype='str', delimiter=',', unpack=True)
+    atlaslist = np.asarray(atlaslist)
+    connpaths = np.asarray(connpaths)
     if not os.path.isdir(args.outputdir):
         os.makedirs(args.outputdir)
 

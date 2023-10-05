@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 import streamline_statistics as slstats
+import zscores
 from plotter import plot_heatmap, plot_hist
 
 DESCRIPTION = '''
@@ -60,13 +61,19 @@ def main(argv):
     parser = buildArgsParser()
     args = parser.parse_args(argv)
 
-    # Import connectome data
+    # Parse argements
     subjlist = np.loadtxt(args.subjecttxt, dtype='str', delimiter = '\n')
     atlaslist, connpaths, *params = np.genfromtxt(args.pathtxt, dtype='str', delimiter=',', unpack=True)
     atlaslist = np.asarray(atlaslist)
     connpaths = np.asarray(connpaths)
     if not os.path.isdir(args.outputdir):
         os.makedirs(args.outputdir)
+    covars = None
+    if args.covarscsv is not None:
+        covars = pd.read_csv(args.covarscsv, index_col=0, na_values=[' ','na','nan','NaN','NAN','NA','#N/A','.','NULL'])
+    columns = None
+    if args.columnstxt is not None:
+        columns = [r.strip() for r in open(args.columnstxt,'r').readlines()]
 
     FIG_ROW = 4
     FIG_COL = 5
@@ -87,7 +94,7 @@ def main(argv):
         vmax = np.log(np.percentile(max_edges, 99))
         
         for i, subject in enumerate(subjlist):
-            print('Checking connectome', i+1, 'out of', len(subjlist))
+            print('Checking atlas:', atlas, 'connectome:', i+1, 'out of', len(subjlist))
             connmat = slstats.read_connmat(connpaths[t].format(s=subject))
             measures['Subject'].append(subject)
             measures['file'].append(connpaths[t].format(s=subject))
@@ -119,13 +126,17 @@ def main(argv):
         # Save QC measures to csv file
         measures_df = pd.DataFrame(measures)
         measures_df.to_csv(os.path.join(args.outputdir, atlas+'_QC_measures.csv'))
+        #Adjust for covariates and compute z-scores
+        # [TODO] z-score columns: density, avg_network_strength, avg_interhemispheric_strength, avg_intrahemispheric_strength, ratioCN, mean_streamlength, stdev_streamlength, max_streamlength
+        zscores_df = zscores.corrected_zscores(measures_df.set_index('Subject'), columns=columns, covars=covars, formula=args.formula)
+        zscores_df.to_csv(os.path.join(args.outputdir, atlas+'_zscores.csv'))
 
     #compute QC measures for tckstats.txt and nseeds.txt
     if args.tckstr is not None:
         tckpaths = args.tckstr
     else:
         tckpaths = os.path.dirname(connpaths[0])
-    measures = {'count':[], 'nseeds':[], 'ratioCN':[],
+    measures = {'Subject':[], 'count':[], 'nseeds':[], 'ratioCN':[],
                 'mean_streamlength':[], 'median_streamlength':[], 'stdev_streamlength':[],
                 'min_streamlength':[], 'max_streamlength':[]
                 }
@@ -136,6 +147,7 @@ def main(argv):
         except:
             tck_found = False
             break
+        measures['Subject'].append(subject)
         measures['count'].append(slstats.count(tckstats_df))
         measures['nseeds'].append(slstats.nseeds(tckpaths.format(s=subject)))
         measures['ratioCN'].append(measures['count'][-1] / measures['nseeds'][-1])
@@ -146,18 +158,12 @@ def main(argv):
         measures['max_streamlength'].append(slstats.max_streamlength(tckstats_df))
     if tck_found:
         measures_df = pd.DataFrame(measures)
-        measures_df.to_csv(os.path.join(args.outputdir, 'tck_QC_measures.csv'))
-    
-    #TO DO: adjust for covariates and compute z-scores
-    # z-score columns: density, avg_network_strength, avg_interhemispheric_strength, avg_intrahemispheric_strength, 
-    #                  ratioCN, mean_streamlength, stdev_streamlength, max_streamlength
-    covars = None
-    if args.covarscsv is not None:
-        covars = pd.read_csv(args.covarscsv, index_col=0, na_values=[' ','na','nan','NaN','NAN','NA','#N/A','.','NULL'])
-    columns = None
-    if args.columnstxt is not None:
-        columns = [r.strip() for r in open(args.columnstxt,'r').readlines()]
-    
+        measures_df.to_csv(os.path.join(args.outputdir, 'tckstats_QC_measures.csv'))
+        #Adjust for covariates and compute z-scores
+        # [TODO] z-score columns: density, avg_network_strength, avg_interhemispheric_strength, avg_intrahemispheric_strength, ratioCN, mean_streamlength, stdev_streamlength, max_streamlength
+        zscores_df = zscores.corrected_zscores(measures_df.set_index('Subject'), columns=columns, covars=covars, formula=args.formula)
+        zscores_df.to_csv(os.path.join(args.outputdir, 'tckstats_zscores.csv'))
+
     #TO DO: plot subject-wise variance and detect outliers
 
 if __name__ == '__main__':

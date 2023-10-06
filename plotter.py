@@ -33,3 +33,22 @@ def plot_hist(connmat, ax=None, title=None, **kwargs):
     if title is not None:
         ax.set_title(title)
     return im
+
+def plot_measure(measure, ax=None, title=None, violin=True, outlier_threshold=None, subject=None, **kwargs):
+    if ax is None:
+        ax = plt.gca()
+    measure = np.asarray(measure)
+    subject = np.asarray(subject)
+    if outlier_threshold is not None:
+        outliers = np.abs(measure) >= outlier_threshold
+        if len(measure[outliers]) > 0:
+            ax.scatter(measure[outliers], [1]*len(measure[outliers]), marker='d', c='k', s=10)
+            if subject is not None:
+                for i in range(len(measure[outliers])):
+                    ax.annotate(subject[outliers][i], (measure[outliers][i], 1), textcoords="offset points", xytext=(0, 10), ha='center', rotation='vertical')
+            measure = measure[~outliers]
+    if violin:
+        im = ax.violinplot(measure, showmedians=True, vert=False)
+    else:
+        im = ax.boxplot(measure, whis=(0,100), vert=False)
+    return im

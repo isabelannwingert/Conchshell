@@ -10,7 +10,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 import streamline_statistics as slstats
 import zscores
-from plotter import plot_heatmap, plot_hist
+from plotter import plot_heatmap, plot_hist, plot_measure
 
 DESCRIPTION = '''
     Conchshell pipeline for DTI quality control, including the examination of connectome heatmaps, histograms, and derived metrics.
@@ -77,6 +77,7 @@ def main(argv):
 
     FIG_ROW = 4
     FIG_COL = 5
+    outlier_threshold = 4
     # compute QC measures for each atlas
     for t, atlas in enumerate(atlaslist):
         pp_heatmap = PdfPages(os.path.join(args.outputdir, atlas+'_heatmaps.pdf'))
@@ -105,7 +106,7 @@ def main(argv):
             measures['avg_intrahemispheric_strength'].append(slstats.average_intrahemispheric_strength(connmat))
 
             # Plot heatmaps and histograms to pdf file
-            findex = i%(FIG_COL*FIG_ROW)
+            findex = i % (FIG_COL*FIG_ROW)
             if  (i > 0) and (findex == 0):
                 pp_heatmap.savefig(fig1)
                 pp_histogram.savefig(fig2)
@@ -125,11 +126,27 @@ def main(argv):
 
         # Save QC measures to csv file
         measures_df = pd.DataFrame(measures)
-        measures_df.to_csv(os.path.join(args.outputdir, atlas+'_QC_measures.csv'))
+        measures_df.to_csv(os.path.join(args.outputdir, atlas+'_measures_QC.csv'))
         #Adjust for covariates and compute z-scores
         # [TODO] z-score columns: density, avg_network_strength, avg_interhemispheric_strength, avg_intrahemispheric_strength, ratioCN, mean_streamlength, stdev_streamlength, max_streamlength
         zscores_df = zscores.corrected_zscores(measures_df.set_index('Subject'), columns=columns, covars=covars, formula=args.formula)
-        zscores_df.to_csv(os.path.join(args.outputdir, atlas+'_zscores.csv'))
+        zscores_df.to_csv(os.path.join(args.outputdir, atlas+'_measures_zscore.csv'))
+
+        # Plot subject-wise variance and detect outliers
+        pp_zscore = PdfPages(os.path.join(args.outputdir, atlas+'_measures_zscore.pdf'))
+        fig3 = plt.figure(figsize=(25, 5))
+        for i, col in enumerate(zscores_df.columns):
+            findex = i % FIG_COL
+            if (i > 0) and (findex == 0):
+                pp_zscore.savefig(fig3)
+                fig3.clf()
+            ax = fig3.add_subplot(1, FIG_COL, findex+1)
+            plot_measure(zscores_df[col], ax=ax, title=col, violin=True, outlier_threshold=outlier_threshold, subject=subjlist)
+        fig3.tight_layout()
+        pp_zscore.savefig(fig3)
+        pp_zscore.close()
+
+
 
     #compute QC measures for tckstats.txt and nseeds.txt
     if args.tckstr is not None:
@@ -156,15 +173,29 @@ def main(argv):
         measures['stdev_streamlength'].append(slstats.stdev_streamlength(tckstats_df))
         measures['min_streamlength'].append(slstats.min_streamlength(tckstats_df))
         measures['max_streamlength'].append(slstats.max_streamlength(tckstats_df))
+    
     if tck_found:
         measures_df = pd.DataFrame(measures)
-        measures_df.to_csv(os.path.join(args.outputdir, 'tckstats_QC_measures.csv'))
+        measures_df.to_csv(os.path.join(args.outputdir, 'tckstats_QC.csv'))
         #Adjust for covariates and compute z-scores
         # [TODO] z-score columns: density, avg_network_strength, avg_interhemispheric_strength, avg_intrahemispheric_strength, ratioCN, mean_streamlength, stdev_streamlength, max_streamlength
         zscores_df = zscores.corrected_zscores(measures_df.set_index('Subject'), columns=columns, covars=covars, formula=args.formula)
-        zscores_df.to_csv(os.path.join(args.outputdir, 'tckstats_zscores.csv'))
+        zscores_df.to_csv(os.path.join(args.outputdir, 'tckstats_zscore.csv'))
 
-    #TO DO: plot subject-wise variance and detect outliers
+        # Plot subject-wise variance and detect outliers
+        pp_zscore = PdfPages(os.path.join(args.outputdir, atlas+'tckstats_zscore.pdf'))
+        fig3 = plt.figure(figsize=(25, 5))
+        for i, col in enumerate(zscores_df.columns):
+            findex = i % FIG_COL
+            if (i > 0) and (findex == 0):
+                pp_zscore.savefig(fig3)
+                fig3.clf()
+            ax = fig3.add_subplot(1, FIG_COL, findex+1)
+            plot_measure(zscores_df[col], ax=ax, title=col, violin=True, outlier_threshold=outlier_threshold, subject=subjlist)
+        fig3.tight_layout()
+        pp_zscore.savefig(fig3)
+        pp_zscore.close()
+    print('Done!')
 
 if __name__ == '__main__':
     main(sys.argv[1:])

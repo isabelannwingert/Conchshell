@@ -24,7 +24,6 @@ def plot_heatmap(connmat, ax=None, title=None, row_labels=None, col_labels=None,
                 ax.text(j, i, int(connmat[i, j]), ha="center", va="center", color="w")
     return im
 
-
 def plot_hist(connmat, ax=None, title=None, **kwargs):
     if ax is None:
         ax = plt.gca()
@@ -43,9 +42,9 @@ def plot_measure(measure, ax=None, title=None, violin=True, outlier_threshold=No
         outliers = np.abs(measure) >= outlier_threshold
         if len(measure[outliers]) > 0:
             ax.scatter(measure[outliers], [1]*len(measure[outliers]), marker='d', c='k', s=10)
-            if subject is not None:
-                for i in range(len(measure[outliers])):
-                    ax.annotate(subject[outliers][i], (measure[outliers][i], 1), textcoords="offset points", xytext=(0, 10), ha='center', rotation='vertical')
+            # if subject is not None:
+                # for i in range(len(measure[outliers])):
+                    # ax.annotate(subject[outliers][i], (measure[outliers][i], 1), textcoords="offset points", xytext=(0, 10), ha='center', rotation='vertical')
             measure = measure[~outliers]
     if violin:
         im = ax.violinplot(measure, showmedians=True, vert=False)

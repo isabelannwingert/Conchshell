@@ -47,10 +47,10 @@ def buildArgsParser():
                     type=str, required=False, default=None,
                     help='A csv file containing covariate features (e.g. Age, Group, Site) with subjectID in the leftmost column'
                     )
-    p.add_argument('-C', '--columns', action='store', metavar='<txt>', dest='columnstxt',
-                    type=str, required=False, default=None,
-                    help='A txt file containing the column names of covariates to adjust for during the quality control process'
-                    )
+    # p.add_argument('-C', '--columns', action='store', metavar='<txt>', dest='columnstxt',
+                    # type=str, required=False, default=None,
+                    # help='A txt file containing the column names of covariates to adjust for during the quality control process'
+                    # )
     p.add_argument('-f', '--formula', action='store', metavar='<str>', dest='formula',
                     type=str, required=False, default=None,
                     help='A patsy-like formula that defines the covariates to adjust for. Default is no covariates. Example: Age+Sex+Group+Site'
@@ -60,20 +60,22 @@ def buildArgsParser():
 def main(argv):
     parser = buildArgsParser()
     args = parser.parse_args(argv)
-
     # Parse argements
-    subjlist = np.loadtxt(args.subjecttxt, dtype='str', delimiter = '\n')
+    subjlist = [ a.strip() for a in open(args.subjecttxt, 'r').readlines()]
     atlaslist, connpaths, *params = np.genfromtxt(args.pathtxt, dtype='str', delimiter=',', unpack=True)
-    atlaslist = np.asarray(atlaslist)
-    connpaths = np.asarray(connpaths)
+    if isinstance(atlaslist, str):  
+        # if args.pathtxt has only 1 line genfromtxt returns a string 
+        atlaslist = [atlaslist]
+        connpaths = [connpaths]
+        params = [[params[0]], [params[1]]]
     if not os.path.isdir(args.outputdir):
         os.makedirs(args.outputdir)
     covars = None
     if args.covarscsv is not None:
         covars = pd.read_csv(args.covarscsv, index_col=0, na_values=[' ','na','nan','NaN','NAN','NA','#N/A','.','NULL'])
-    columns = None
-    if args.columnstxt is not None:
-        columns = [r.strip() for r in open(args.columnstxt,'r').readlines()]
+    # columns = None
+    # if args.columnstxt is not None:
+        # columns = [r.strip() for r in open(args.columnstxt,'r').readlines()]
 
     FIG_ROW = 4
     FIG_COL = 5
@@ -92,7 +94,7 @@ def main(argv):
         fig2 = plt.figure(figsize=(25, 20))
         max_edges = [slstats.read_connmat(connpaths[t].format(s=subject)).max() for subject in subjlist] 
         max_edges = np.asarray(max_edges)
-        vmax = np.log(np.percentile(max_edges, 99))
+        vmax = np.log(np.percentile(max_edges, 99)+1)
         
         for i, subject in enumerate(subjlist):
             print('Checking atlas:', atlas, 'connectome:', i+1, 'out of', len(subjlist))
@@ -129,7 +131,7 @@ def main(argv):
         measures_df.to_csv(os.path.join(args.outputdir, atlas+'_measures_QC.csv'))
         #Adjust for covariates and compute z-scores
         # [TODO] z-score columns: density, avg_network_strength, avg_interhemispheric_strength, avg_intrahemispheric_strength, ratioCN, mean_streamlength, stdev_streamlength, max_streamlength
-        zscores_df = zscores.corrected_zscores(measures_df.set_index('Subject'), columns=columns, covars=covars, formula=args.formula)
+        zscores_df = zscores.corrected_zscores(measures_df.set_index('Subject'), covars=covars, formula=args.formula)  # columns=columns, 
         zscores_df.to_csv(os.path.join(args.outputdir, atlas+'_measures_zscore.csv'))
 
         # Plot subject-wise variance and detect outliers
@@ -145,8 +147,6 @@ def main(argv):
         fig3.tight_layout()
         pp_zscore.savefig(fig3)
         pp_zscore.close()
-
-
 
     #compute QC measures for tckstats.txt and nseeds.txt
     if args.tckstr is not None:
@@ -179,7 +179,7 @@ def main(argv):
         measures_df.to_csv(os.path.join(args.outputdir, 'tckstats_QC.csv'))
         #Adjust for covariates and compute z-scores
         # [TODO] z-score columns: density, avg_network_strength, avg_interhemispheric_strength, avg_intrahemispheric_strength, ratioCN, mean_streamlength, stdev_streamlength, max_streamlength
-        zscores_df = zscores.corrected_zscores(measures_df.set_index('Subject'), columns=columns, covars=covars, formula=args.formula)
+        zscores_df = zscores.corrected_zscores(measures_df.set_index('Subject'), covars=covars, formula=args.formula) # columns=columns, 
         zscores_df.to_csv(os.path.join(args.outputdir, 'tckstats_zscore.csv'))
 
         # Plot subject-wise variance and detect outliers

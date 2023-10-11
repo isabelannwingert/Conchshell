@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 import sys
-import argparse
+import argparse, textwrap
 import os
 import numpy as np
 import pandas as pd
@@ -17,31 +17,35 @@ DESCRIPTION = '''
 '''
 
 def buildArgsParser():
-    p = argparse.ArgumentParser(description=DESCRIPTION)
+    p = argparse.ArgumentParser(description=DESCRIPTION, formatter_class=argparse.RawTextHelpFormatter)
     
     p.add_argument('-s', '--subject', action='store', metavar='<txt>', dest='subjecttxt',
                     type=str, required=True, 
-                    help='A txt file containing subjectIDs that will undergo examination for quality control'
+                    help='A txt file containing subjectIDs that will undergo examination for quality control.'
                     )
     p.add_argument('-p', '--path', action='store', metavar='<txt>', dest='pathtxt',
                     type=str, required=True, 
-                    help='A comma-delimited txt file containing:\n\
-                        column 1 (required): atlas name,\n\
-                        column 2 (required): path template to the connectome file with {s} token for subjectIDs,\n\
-                        column 3 (optional): path template to the nifti atlas in subject space with {s} token for subjectIDs,\n\
-                        column 4 (optional): path to the atlas node order txt file.\n\
-                        Example txt:\n\
-                        desikan,/path/to/{s}_desikan_connmat.txt,/path/to/{s}_desikan.nii.gz,desikan_lut.txt\n\
-                        Schaefer100,/path/to/{s}_Schaefer100_connmat.txt,/path/to/{s}_Schaefer100.nii.gz,schaefer_node_order.txt'
+                    help=textwrap.dedent('''\
+                                        A comma-delimited txt file containing:
+                                        column 1 (required): atlas name,
+                                        column 2 (required): path template to the connectome file with {s} token for subjectIDs,
+                                        column 3 (optional): path template to the nifti atlas in subject space with {s} token for subjectIDs,
+                                        column 4 (optional): path to the atlas node order txt file.
+                                        Example txt file:
+                                        desikan,/path/to/{s}_desikan_connmat.txt,/path/to/{s}_desikan.nii.gz,desikan_lut.txt
+                                        Schaefer100,/path/to/{s}_Schaefer100_connmat.txt,/path/to/{s}_Schaefer100.nii.gz,schaefer_node_order.txt
+                                        ''')
                     )
     p.add_argument('-o', '--output', action='store', metavar='<dir>', dest='outputdir',
                     type=str, required=True, 
-                    help='Path to the folder for the outputs'
+                    help='Path to the folder for the outputs.'
                     )
     p.add_argument('-t', '--tck', action='store', metavar='<str>', dest='tckstr',
                     type=str, required=False,
-                    help='The path template to the folders that store track statistics data (tckstats.txt, nseeds.txt).\
-                        If not specified, the pipeline will by default search the folder where each connectome matrix is located. If not found, skip those measures.'
+                    help=textwrap.dedent('''\
+                                        The path template to the folders that store track statistics data (tckstats.txt, nseeds.txt).
+                                        If not specified, the pipeline will by default search the folder where each connectome matrix is located. If not found, skip those measures.
+                                        ''')
                     )
     p.add_argument('-c', '--covars', action='store', metavar='<csv>', dest='covarscsv',
                     type=str, required=False, default=None,
@@ -67,7 +71,7 @@ def main(argv):
         # if args.pathtxt has only 1 line genfromtxt returns a string 
         atlaslist = [atlaslist]
         connpaths = [connpaths]
-        params = [[params[0]], [params[1]]]
+        params = [[a] for a in params]
     if not os.path.isdir(args.outputdir):
         os.makedirs(args.outputdir)
     covars = None
@@ -79,7 +83,7 @@ def main(argv):
 
     FIG_ROW = 4
     FIG_COL = 5
-    outlier_threshold = 4
+    outlier_threshold = 1
     # compute QC measures for each atlas
     for t, atlas in enumerate(atlaslist):
         pp_heatmap = PdfPages(os.path.join(args.outputdir, atlas+'_heatmaps.pdf'))
@@ -130,13 +134,12 @@ def main(argv):
         measures_df = pd.DataFrame(measures)
         measures_df.to_csv(os.path.join(args.outputdir, atlas+'_measures_QC.csv'))
         #Adjust for covariates and compute z-scores
-        # [TODO] z-score columns: density, avg_network_strength, avg_interhemispheric_strength, avg_intrahemispheric_strength, ratioCN, mean_streamlength, stdev_streamlength, max_streamlength
         zscores_df = zscores.corrected_zscores(measures_df.set_index('Subject'), covars=covars, formula=args.formula)  # columns=columns, 
         zscores_df.to_csv(os.path.join(args.outputdir, atlas+'_measures_zscore.csv'))
 
         # Plot subject-wise variance and detect outliers
         pp_zscore = PdfPages(os.path.join(args.outputdir, atlas+'_measures_zscore.pdf'))
-        fig3 = plt.figure(figsize=(25, 5))
+        fig3 = plt.figure(figsize=(40, 5))
         for i, col in enumerate(zscores_df.columns):
             findex = i % FIG_COL
             if (i > 0) and (findex == 0):
@@ -178,13 +181,12 @@ def main(argv):
         measures_df = pd.DataFrame(measures)
         measures_df.to_csv(os.path.join(args.outputdir, 'tckstats_QC.csv'))
         #Adjust for covariates and compute z-scores
-        # [TODO] z-score columns: density, avg_network_strength, avg_interhemispheric_strength, avg_intrahemispheric_strength, ratioCN, mean_streamlength, stdev_streamlength, max_streamlength
         zscores_df = zscores.corrected_zscores(measures_df.set_index('Subject'), covars=covars, formula=args.formula) # columns=columns, 
         zscores_df.to_csv(os.path.join(args.outputdir, 'tckstats_zscore.csv'))
 
         # Plot subject-wise variance and detect outliers
         pp_zscore = PdfPages(os.path.join(args.outputdir, atlas+'tckstats_zscore.pdf'))
-        fig3 = plt.figure(figsize=(25, 5))
+        fig3 = plt.figure(figsize=(40, 5))
         for i, col in enumerate(zscores_df.columns):
             findex = i % FIG_COL
             if (i > 0) and (findex == 0):
